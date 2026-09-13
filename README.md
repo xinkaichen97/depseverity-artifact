@@ -42,4 +42,4 @@ model calls, using the functions in `src/aggregate.py` and `src/evaluate.py`.
   was not, and every run in `runs_scrubbed/` reports 0.
 - `meta.called_utc` records when each call was made. This matters: one hosted model ID
   was re-pointed to a different model during the study period.
-- Scrubbing removed 23201 verbatim evidence spans across 29050 records.
+- Scrubbing removed 24883 verbatim evidence spans across 33462 records.

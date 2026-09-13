@@ -32,7 +32,7 @@ def subset(df, which: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--condition", required=True, choices=["C1", "C2", "C3", "C4"])
+    ap.add_argument("--condition", required=True, choices=["C1", "C2", "C3", "C4", "C3P", "C3S"])
     ap.add_argument("--model", required=True, help="anthropic:claude-sonnet-5 | ollama:qwen3:8b")
     ap.add_argument("--subset", default="dev", choices=["dev", "fit", "train", "test"])
     ap.add_argument("--seed", type=int, default=0)
@@ -70,14 +70,14 @@ def main():
         rec["meta"] = r.meta
         rec["cached"] = r.cached
 
-        if args.condition in ("C3", "C4"):
+        if args.condition in ("C3", "C4", "C3P", "C3S"):
             items, why = C.parse_items(r.text, C.ITEMS_FOR[args.condition])
             rec["items"] = items
             rec["parse_error"] = why
             if items is not None:
                 rec["grounding"] = {
                     k: C.span_grounded(v["evidence"], row.text)
-                    for k, v in items.items() if v["status"] == "present"
+                    for k, v in items.items() if v["evidence"].strip()
                 }
         else:
             lab = C.parse_label(r.text, last=(args.condition == "C2"), labels=labels)

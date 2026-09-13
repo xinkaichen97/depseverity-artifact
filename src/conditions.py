@@ -108,14 +108,69 @@ C4_SYSTEM = C3_SYSTEM.replace(
     "Include all twenty-one symptom keys exactly as written above.")
 C4_USER = C3_USER
 
+
+# --------------------------------------------------------------------------- C3 ablations
+# Two prompt variants, to test whether the sparse extraction and the collapse of the
+# three-valued scheme are properties of the corpus or of our prompt wording. Everything
+# else is held fixed: same nine items, same JSON schema, same prohibition on the model
+# seeing or emitting a severity label.
+
+# C3P - permissive. Lowers the bar for "present" from stated evidence to reasonable
+# implication, which is the form the "your prompt was too conservative" objection takes.
+C3P_SYSTEM = (
+    "You are annotating a single social media post for the presence of nine specific "
+    "symptoms. You are not rating, scoring, or diagnosing anything - you only report, for "
+    "each symptom, whether the post indicates it.\n\n"
+    f"The nine symptoms are:\n{_ITEM_LINES}\n\n"
+    "For each symptom return one of:\n"
+    '  "present" - the post indicates the writer experiences it. Count it as present if '
+    "the writer states it directly, describes it in their own words, or describes "
+    "circumstances or behaviour from which it reasonably follows. Do not require a "
+    "clinical phrasing, and do not require the writer to name the symptom.\n"
+    '  "absent"  - the post indicates the writer does NOT experience it\n'
+    '  "unclear" - the post gives no indication either way\n\n'
+    "Err toward \"present\" when a reading of the post supports it. Reserve \"unclear\" "
+    "for symptoms the post genuinely does not touch on.\n\n"
+    'When a symptom is "present", also return "evidence": a short span copied verbatim '
+    "from the post that supports the judgement. Copy it exactly; do not paraphrase.\n\n"
+    "Reply with JSON only - no preamble, no code fence, no commentary. Schema:\n"
+    '{"<symptom>": {"status": "present|absent|unclear", "evidence": "<verbatim span or empty>"}, ...}\n'
+    "Include all nine symptom keys exactly as written above."
+)
+
+# C3S - symmetric evidence. Requires a verbatim span for "absent" as well as "present",
+# so "absent" carries the same burden as "present". Tests whether the collapse of the
+# three-valued scheme (absent used in 0.3% of judgements) is an artifact of the original
+# prompt asking for evidence in only one direction.
+C3S_SYSTEM = (
+    "You are annotating a single social media post for the presence of nine specific "
+    "symptoms. You are not rating, scoring, or diagnosing anything - you only report, for "
+    "each symptom, what the post says about it.\n\n"
+    f"The nine symptoms are:\n{_ITEM_LINES}\n\n"
+    "For each symptom return one of:\n"
+    '  "present" - the post gives evidence that the writer experiences it\n'
+    '  "absent"  - the post gives evidence that the writer does NOT experience it. This '
+    "includes the writer denying the symptom, describing its opposite, or describing "
+    "functioning that is incompatible with it.\n"
+    '  "unclear" - the post does not address the symptom\n\n'
+    'For BOTH "present" and "absent" you must return "evidence": a short span copied '
+    "verbatim from the post that supports the judgement. If you cannot quote a supporting "
+    'span, the correct answer is "unclear". Copy spans exactly; do not paraphrase.\n\n'
+    "Reply with JSON only - no preamble, no code fence, no commentary. Schema:\n"
+    '{"<symptom>": {"status": "present|absent|unclear", "evidence": "<verbatim span or empty>"}, ...}\n'
+    "Include all nine symptom keys exactly as written above."
+)
+
 SPECS = {
     "C1": (C1_SYSTEM, C1_USER),
     "C2": (C2_SYSTEM, C2_USER),
     "C3": (C3_SYSTEM, C3_USER),
     "C4": (C4_SYSTEM, C4_USER),
+    "C3P": (C3P_SYSTEM, C3_USER),
+    "C3S": (C3S_SYSTEM, C3_USER),
 }
 
-ITEMS_FOR = {"C3": ITEMS, "C4": BDI_ITEMS}
+ITEMS_FOR = {"C3": ITEMS, "C4": BDI_ITEMS, "C3P": ITEMS, "C3S": ITEMS}
 
 
 def prompt(condition: str, text: str, labels=None) -> tuple[str, str]:
