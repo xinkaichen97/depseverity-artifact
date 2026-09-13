@@ -1,9 +1,13 @@
 # Exact prompt text
 
 Reproduced verbatim from `src/conditions.py`. `{text}` is the post.
+C3P and C3S are the prompt ablation; they differ from C3 in wording
+only, over the same nine items and the same JSON schema.
 
 
 ## C1
+
+direct label, no reasoning step.
 
 ### system
 
@@ -25,6 +29,8 @@ Severity level:
 ```
 
 ## C2
+
+chain-of-thought, then the label; the model still emits the label.
 
 ### system
 
@@ -49,6 +55,8 @@ Post:
 ```
 
 ## C3
+
+structured PHQ-9 extraction; the model never names a severity label.
 
 ### system
 
@@ -91,6 +99,8 @@ Post:
 
 ## C4
 
+as C3 over BDI-II's 21 items.
+
 ### system
 
 ```
@@ -131,6 +141,90 @@ When and only when a symptom is "present", also return "evidence": a short span 
 Reply with JSON only - no preamble, no code fence, no commentary. Schema:
 {"<symptom>": {"status": "present|absent|unclear", "evidence": "<verbatim span or empty>"}, ...}
 Include all twenty-one symptom keys exactly as written above.
+```
+
+### user
+
+```
+Post:
+"""
+{text}
+"""
+```
+
+## C3P
+
+**prompt ablation** — C3 with a lower evidentiary bar for `present`. Extracts 60% more symptoms and scores no better.
+
+### system
+
+```
+You are annotating a single social media post for the presence of nine specific symptoms. You are not rating, scoring, or diagnosing anything - you only report, for each symptom, whether the post indicates it.
+
+The nine symptoms are:
+  1. "anhedonia" - little interest or pleasure in doing things
+  2. "depressed_mood" - feeling down, depressed, or hopeless
+  3. "sleep" - trouble falling or staying asleep, or sleeping too much
+  4. "fatigue" - feeling tired or having little energy
+  5. "appetite" - poor appetite, overeating, or weight change
+  6. "worthlessness" - feeling bad about yourself, worthless, or excessively guilty
+  7. "concentration" - trouble concentrating on things
+  8. "psychomotor" - moving or speaking noticeably slowly, or being restless and fidgety
+  9. "self_harm" - thoughts that you would be better off dead, or of hurting yourself
+
+For each symptom return one of:
+  "present" - the post indicates the writer experiences it. Count it as present if the writer states it directly, describes it in their own words, or describes circumstances or behaviour from which it reasonably follows. Do not require a clinical phrasing, and do not require the writer to name the symptom.
+  "absent"  - the post indicates the writer does NOT experience it
+  "unclear" - the post gives no indication either way
+
+Err toward "present" when a reading of the post supports it. Reserve "unclear" for symptoms the post genuinely does not touch on.
+
+When a symptom is "present", also return "evidence": a short span copied verbatim from the post that supports the judgement. Copy it exactly; do not paraphrase.
+
+Reply with JSON only - no preamble, no code fence, no commentary. Schema:
+{"<symptom>": {"status": "present|absent|unclear", "evidence": "<verbatim span or empty>"}, ...}
+Include all nine symptom keys exactly as written above.
+```
+
+### user
+
+```
+Post:
+"""
+{text}
+"""
+```
+
+## C3S
+
+**prompt ablation** — C3 requiring a verbatim span for `absent` as well as `present`, testing whether the three-valued collapse is an artifact of the wording.
+
+### system
+
+```
+You are annotating a single social media post for the presence of nine specific symptoms. You are not rating, scoring, or diagnosing anything - you only report, for each symptom, what the post says about it.
+
+The nine symptoms are:
+  1. "anhedonia" - little interest or pleasure in doing things
+  2. "depressed_mood" - feeling down, depressed, or hopeless
+  3. "sleep" - trouble falling or staying asleep, or sleeping too much
+  4. "fatigue" - feeling tired or having little energy
+  5. "appetite" - poor appetite, overeating, or weight change
+  6. "worthlessness" - feeling bad about yourself, worthless, or excessively guilty
+  7. "concentration" - trouble concentrating on things
+  8. "psychomotor" - moving or speaking noticeably slowly, or being restless and fidgety
+  9. "self_harm" - thoughts that you would be better off dead, or of hurting yourself
+
+For each symptom return one of:
+  "present" - the post gives evidence that the writer experiences it
+  "absent"  - the post gives evidence that the writer does NOT experience it. This includes the writer denying the symptom, describing its opposite, or describing functioning that is incompatible with it.
+  "unclear" - the post does not address the symptom
+
+For BOTH "present" and "absent" you must return "evidence": a short span copied verbatim from the post that supports the judgement. If you cannot quote a supporting span, the correct answer is "unclear". Copy spans exactly; do not paraphrase.
+
+Reply with JSON only - no preamble, no code fence, no commentary. Schema:
+{"<symptom>": {"status": "present|absent|unclear", "evidence": "<verbatim span or empty>"}, ...}
+Include all nine symptom keys exactly as written above.
 ```
 
 ### user

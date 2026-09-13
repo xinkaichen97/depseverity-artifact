@@ -5,7 +5,8 @@ Code, exact prompts, aggregate results, and scrubbed per-post records for the pa
 ## What is here
 
 - `src/` — the full pipeline: providers, conditions, aggregation, metrics, analyses.
-- `PROMPTS.md` — the exact system and user prompts for C1–C4, verbatim.
+- `PROMPTS.md` — the exact system and user prompts for every condition,
+  C1–C4 plus the C3P/C3S prompt ablation, verbatim.
 - `runs_scrubbed/` — one record per (condition, model, corpus, split, seed) post.
   **No post text.** Raw model responses and verbatim evidence spans are removed;
   per-item `status` values, gold labels, predictions and token counts are retained,
