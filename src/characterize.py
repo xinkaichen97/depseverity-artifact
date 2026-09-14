@@ -36,7 +36,8 @@ w(f"- Duplicate text groups: **{len(dup_groups)}** covering {int(dup_groups.sum(
 w(f"- Of those, groups whose copies carry **different** gold labels: **{len(conf)}**")
 for t in conf.index:
     labs = sorted(raw[raw['text'] == t]['label'].tolist())
-    w(f"  - `{labs}` — \"{t[:70].replace(chr(10),' ')}...\"")
+    rows = raw.index[raw['text'] == t].tolist()
+    w(f"  - `{labs}` — raw CSV rows {rows} (text withheld: the corpus carries no license)")
 w("")
 
 w("## 3. Class distribution\n")

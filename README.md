@@ -12,6 +12,9 @@ Code, exact prompts, aggregate results, and scrubbed per-post records for the pa
   per-item `status` values, gold labels, predictions and token counts are retained,
   which is everything the reported metrics are computed from.
 - `results/` — the generated tables and JSON behind every number in the paper.
+- `paper/` — `numbers.json` and `macro_f1_deltas.json`, which every number in the paper is
+  read from, plus `fig_deltas.py` (Fig. 1) and `macro_f1_boot.py` (macro-F1 paired
+  bootstrap, which runs on `runs_scrubbed/` and first checks it reproduces `numbers.json`).
 
 ## What is deliberately absent
 
@@ -32,6 +35,9 @@ python src/depsign_results.py           # second-corpus tables
 python src/control_cutoffs.py           # fitted vs a priori control
 python src/ceiling.py                   # learned-aggregation ceiling
 python src/error_analysis.py            # item 9, span grounding, per-community
+python src/calibrate.py                 # supervision-matched C1/C2 control
+python src/paper_numbers.py             # paper/numbers.json
+cd paper && python fig_deltas.py && python macro_f1_boot.py   # Fig. 1, macro-F1 tests
 ```
 
 Every metric in the paper can be recomputed from `runs_scrubbed/` alone, without any
@@ -43,4 +49,4 @@ model calls, using the functions in `src/aggregate.py` and `src/evaluate.py`.
   was not, and every run in `runs_scrubbed/` reports 0.
 - `meta.called_utc` records when each call was made. This matters: one hosted model ID
   was re-pointed to a different model during the study period.
-- Scrubbing removed 24883 verbatim evidence spans across 33462 records.
+- Scrubbing removed 27156 verbatim evidence spans across 37380 records.

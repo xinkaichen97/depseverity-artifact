@@ -56,9 +56,7 @@ def main():
            "|---|---|---|---:|---:|---|---:|"]
     deltas = []
     for ds, (mod, k) in CORP.items():
-        models = (["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
-                  if ds == "depseverity" else
-                  ["deepseek:deepseek-flash", "anthropic:claude-sonnet-5"])
+        models = ["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
         for model in models:
             short = model.split(":")[1][:12]
             try:
@@ -81,35 +79,34 @@ def main():
                            f"`{''.join(str(x) for x in m)}` | {q3:.3f} |")
                 deltas.append((ds, short, cond, k, y, pc, p, q3, qc))
 
-    out += ["", "## Does C3 still beat a supervision-matched C2? (paired, 4000 resamples)\n",
+    out += ["", "## Does C3 still beat a supervision-matched C1/C2? (paired, 4000 resamples)\n",
             "| Corpus | Model | Comparison | $\\Delta\\kappa_w$ [95\\% CI] | sig |",
             "|---|---|---|---|:--:|"]
     for ds, (mod, k) in CORP.items():
-        models = (["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
-                  if ds == "depseverity" else
-                  ["deepseek:deepseek-flash", "anthropic:claude-sonnet-5"])
+        models = ["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
         for model in models:
             short = model.split(":")[1][:12]
-            rows = [d for d in deltas if d[0] == ds and d[1] == short and d[2] == "C2"]
-            if not rows:
-                continue
-            _, _, _, k, y, pc, p, q3, qc = rows[0]
-            try:
-                c3 = A.build(model, condition="C3", dataset=ds)
-                d3 = {i: q for i, q in zip(c3["ids"], c3["y_pred"])}
-            except SystemExit:
-                continue
-            test = load("C2", model, "test", ds)
-            ids = sorted(set(test) & set(d3))
-            yy = np.array([test[i][0] for i in ids])
-            cal = np.array([monotone_maps(k)[0][0] for _ in ids])  # placeholder, replaced below
-            m, _ = fit_map(load("C2", model, "fit", ds), k)
-            cal = np.array([m[test[i][1]] for i in ids])
-            c3p = np.array([d3[i] for i in ids])
-            dd = E.paired_delta(yy, cal, c3p, "qwk", k=k)
-            out.append(f"| {ds} | {short} | C3 fitted $-$ C2+cal | "
-                       f"${dd['delta']:+.3f}$ [{dd['ci'][0]:+.3f}, {dd['ci'][1]:+.3f}] | "
-                       f"{'**yes**' if dd['excludes_zero'] else 'no'} |")
+            for cond in ("C2", "C1"):
+                rows = [d for d in deltas if d[0] == ds and d[1] == short and d[2] == cond]
+                if not rows:
+                    continue
+                _, _, _, k, y, pc, p, q3, qc = rows[0]
+                try:
+                    c3 = A.build(model, condition="C3", dataset=ds)
+                    d3 = {i: q for i, q in zip(c3["ids"], c3["y_pred"])}
+                except SystemExit:
+                    continue
+                test = load(cond, model, "test", ds)
+                ids = sorted(set(test) & set(d3))
+                yy = np.array([test[i][0] for i in ids])
+                cal = np.array([monotone_maps(k)[0][0] for _ in ids])  # placeholder, replaced below
+                m, _ = fit_map(load(cond, model, "fit", ds), k)
+                cal = np.array([m[test[i][1]] for i in ids])
+                c3p = np.array([d3[i] for i in ids])
+                dd = E.paired_delta(yy, cal, c3p, "qwk", k=k)
+                out.append(f"| {ds} | {short} | C3 fitted $-$ {cond}+cal | "
+                           f"${dd['delta']:+.3f}$ [{dd['ci'][0]:+.3f}, {dd['ci'][1]:+.3f}] | "
+                           f"{'**yes**' if dd['excludes_zero'] else 'no'} |")
     txt = "\n".join(out)
     open("results/calibration_control.md", "w").write(txt)
     print(txt)

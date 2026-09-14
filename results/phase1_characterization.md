@@ -21,8 +21,8 @@ no annotation guidelines, no per-criterion or per-symptom annotations, no split 
 
 - Duplicate text groups: **15** covering 36 rows (21 redundant).
 - Of those, groups whose copies carry **different** gold labels: **2**
-  - `['minimum', 'severe']` — "Because not really. I would have survived, I always have before, I hav..."
-  - `['minimum', 'moderate']` — "I refuse to carry both of us anymore and I'm also tired of the drama b..."
+  - `['minimum', 'severe']` — raw CSV rows [1612, 1816] (text withheld: the corpus carries no license)
+  - `['minimum', 'moderate']` — raw CSV rows [530, 2549] (text withheld: the corpus carries no license)
 
 ## 3. Class distribution
 

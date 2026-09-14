@@ -48,8 +48,6 @@ for ds, (mod, k) in CORPORA.items():
     out[ds]["floor"] = ev({i: (y, np.bincount(te.y, minlength=k).argmax())
                            for i, y in enumerate(te.y)}, k)
     for model in MODELS:
-        if ds == "depsign" and model.startswith("ollama"):
-            continue
         n = SHORT[model]
         store = {}
         for cond in ("C1", "C2", "C3", "C4"):
