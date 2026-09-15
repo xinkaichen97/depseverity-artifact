@@ -13,8 +13,10 @@ Code, exact prompts, aggregate results, and scrubbed per-post records for the pa
   which is everything the reported metrics are computed from.
 - `results/` — the generated tables and JSON behind every number in the paper.
 - `paper/` — `numbers.json` and `macro_f1_deltas.json`, which every number in the paper is
-  read from, plus `fig_deltas.py` (Fig. 1) and `macro_f1_boot.py` (macro-F1 paired
-  bootstrap, which runs on `runs_scrubbed/` and first checks it reproduces `numbers.json`).
+  read from, plus `fig_deltas.py` (Fig. 1) `macro_f1_boot.py` (macro-F1 paired
+  bootstrap, which runs on `runs_scrubbed/` and first checks it reproduces `numbers.json`) and
+  `run_to_run.py` (generation variance from the seed-1 repeats of Claude-Sonnet-5 and
+  DeepSeek-V4.1-Flash).
 
 ## What is deliberately absent
 
@@ -49,4 +51,4 @@ model calls, using the functions in `src/aggregate.py` and `src/evaluate.py`.
   was not, and every run in `runs_scrubbed/` reports 0.
 - `meta.called_utc` records when each call was made. This matters: one hosted model ID
   was re-pointed to a different model during the study period.
-- Scrubbing removed 27156 verbatim evidence spans across 37380 records.
+- Scrubbing removed 27474 verbatim evidence spans across 38792 records.
