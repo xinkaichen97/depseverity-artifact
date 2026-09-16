@@ -13,8 +13,8 @@ two cutoffs and the a priori rule is DSM-5 >=5 of 9 -> severe, 0 -> not depressi
 | V4.1-Flash | C3 a priori | [0.5, 4.5] | **0.207** [0.134, 0.273] | 0.407 | 0.613 | 42/50 |
 | sonnet-5 | C1 (direct) | — | **0.151** [0.112, 0.189] | 0.796 | 0.288 | 17/50 |
 | sonnet-5 | C2 (CoT) | — | **0.220** [0.167, 0.273] | 0.705 | 0.364 | 19/50 |
-| sonnet-5 | C3 fitted | [0.5, 3.5] | **0.192** [0.127, 0.256] | 0.498 | 0.536 | 36/50 |
-| sonnet-5 | C3 a priori | [0.5, 4.5] | **0.207** [0.138, 0.278] | 0.389 | 0.626 | 42/50 |
+| sonnet-5 | C3 fitted | [0.5, 3.5] | **0.192** [0.127, 0.254] | 0.499 | 0.535 | 36/50 |
+| sonnet-5 | C3 a priori | [0.5, 4.5] | **0.207** [0.138, 0.277] | 0.388 | 0.626 | 42/50 |
 
 ## Primary pre-registered comparison (paired, 4000 resamples)
 
@@ -24,5 +24,5 @@ two cutoffs and the a priori rule is DSM-5 >=5 of 9 -> severe, 0 -> not depressi
 | V4.1-Flash | C3 fitted − C2 | -0.026 [-0.086, +0.033] | no | -0.390 [-0.439, -0.339] sig |
 | V4.1-Flash | C3 a priori − C2 | -0.022 [-0.080, +0.036] | no | -0.330 [-0.378, -0.282] sig |
 | sonnet-5 | C2 − C1 | +0.069 [+0.036, +0.101] | **yes** | -0.091 [-0.126, -0.057] sig |
-| sonnet-5 | C3 fitted − C2 | -0.028 [-0.084, +0.029] | no | -0.207 [-0.255, -0.162] sig |
-| sonnet-5 | C3 a priori − C2 | -0.013 [-0.073, +0.051] | no | -0.316 [-0.365, -0.268] sig |
+| sonnet-5 | C3 fitted − C2 | -0.028 [-0.083, +0.028] | no | -0.207 [-0.254, -0.161] sig |
+| sonnet-5 | C3 a priori − C2 | -0.013 [-0.074, +0.052] | no | -0.317 [-0.365, -0.269] sig |

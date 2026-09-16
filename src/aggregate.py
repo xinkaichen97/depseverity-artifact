@@ -35,6 +35,46 @@ def score(items: dict, weight_unclear: float = 0.0, inventory=None) -> float:
     return s
 
 
+_STATUS = ("present", "absent", "unclear")
+
+
+def recover_items(raw: str, inventory) -> dict | None:
+    """Rescue the per-item statuses from a response whose JSON did not parse.
+
+    Every parse failure we see is a malformed escape inside an `evidence` string
+    (a censored expletive, a doubled quote), not a missing or partial extraction:
+    the nine `status` fields are all there. The score counts statuses and never
+    reads `evidence`, so recovering the statuses recovers the label exactly.
+
+    Returns None unless every item in the inventory is found with a valid status,
+    so a genuinely truncated response is still dropped rather than half-scored.
+    """
+    import re
+    out = {}
+    for key, _ in inventory:
+        m = re.search(rf'"{re.escape(key)}"\s*:\s*\{{', raw)
+        if not m:
+            return None
+        st = re.search(r'"status"\s*:\s*"(\w+)"', raw[m.end():])
+        if not st or st.group(1) not in _STATUS:
+            return None
+        out[key] = {"status": st.group(1), "evidence": ""}
+    return out
+
+
+def usable(recs: list[dict], inventory) -> list[dict]:
+    """Records with items, recovering the statuses of any that failed to parse."""
+    out = []
+    for r in recs:
+        if r.get("items"):
+            out.append(r)
+            continue
+        got = recover_items(r.get("raw") or "", inventory)
+        if got is not None:
+            out.append({**r, "items": got, "recovered": True})
+    return out
+
+
 def load_run(condition: str, model: str, subset: str, seed: int = 0,
              dataset: str = "depseverity") -> list[dict]:
     import re
@@ -112,19 +152,18 @@ def build(model: str, seed: int = 0, cutoffs=None, condition: str = "C3",
     inv = C.ITEMS_FOR[condition]
     n_items = len(inv)
     raw_test = load_run(condition, model, "test", seed, dataset)
-    test = [r for r in raw_test if r.get("items")]
+    test = usable(raw_test, inv)
     if not test:
         raise SystemExit(f"missing {condition} test run for {model}")
     # A partial run silently yields a plausible-looking but wrong row (fewer gold-Severe
     # posts, different class balance). Refuse rather than report it.
     n_expected = int((mod.load()["split"] == "test").sum())
-    if len(raw_test) < n_expected:
+    if len(test) < n_expected:
         raise SystemExit(
-            f"{condition} test run for {model} is INCOMPLETE: {len(raw_test)}/{n_expected}")
+            f"{condition} test run for {model} is INCOMPLETE: {len(test)}/{n_expected}")
 
     if cutoffs is None:
-        fit = [r for r in load_run(condition, model, "fit", seed, dataset)
-               if r.get("items")]
+        fit = usable(load_run(condition, model, "fit", seed, dataset), inv)
         if not fit:
             raise SystemExit(f"missing {condition} fit run for {model}")
         sf = np.array([score(r["items"], inventory=inv) for r in fit])

@@ -1,7 +1,7 @@
 """Paired bootstrap for macro-F1 deltas, rebuilt from per-item run records.
 
 Mirrors src/aggregate.py: the C3 score is the present count, the label is
-searchsorted(cuts, score, side="right"), and records without parsed items are dropped.
+searchsorted(cuts, score, side="right"), and records whose statuses cannot be recovered are dropped.
 Refuses to write output unless it reproduces numbers.json's macro_f1, qwk and
 sev_missed for every cell, and the paper's [removed]-exclusion figures (53 posts,
 kappa_w C3 fitted - C2 = -0.051 on both DepSign models).
@@ -51,13 +51,28 @@ def confusion(g, p, k, idx=None):
     return np.bincount(flat.ravel(), minlength=len(idx) * k * k).reshape(len(idx), k, k)
 
 
+def recover(raw):
+    """Mirrors aggregate.recover_items: rescue statuses when only `evidence` is malformed.
+
+    Returns None unless all nine items are found, so a truncated response stays dropped.
+    """
+    import re
+    out = {}
+    for m in re.finditer(r'"(\w+)"\s*:\s*\{', raw):
+        st = re.search(r'"status"\s*:\s*"(present|absent|unclear)"', raw[m.end():])
+        if st:
+            out[m.group(1)] = {"status": st.group(1)}
+    return out if len(out) == 9 else None
+
+
 def predictions(corpus, model):
     lab = {s: i for i, s in enumerate(LABELS[corpus])}
     recs = {c: load(corpus, c, model) for c in ("C1", "C2", "C3")}
     gold = {i: lab[r["gold"]] for i, r in recs["C1"].items()}
     preds = {c: {i: lab[r["pred"]] for i, r in recs[c].items()} for c in ("C1", "C2")}
-    score = {i: sum(v["status"] == "present" for v in r["items"].values())
-             for i, r in recs["C3"].items() if r.get("items")}
+    score = {i: sum(v["status"] == "present" for v in items.values())
+             for i, r in recs["C3"].items()
+             if (items := r.get("items") or recover(r.get("raw") or "")) is not None}
     for reg in ("fitted", "a priori"):
         cuts = np.asarray(N[corpus]["cells"][f"{model}|C3 {reg}"]["cutoffs"])
         preds[f"C3 {reg}"] = {i: int(np.searchsorted(cuts, s, side="right"))
