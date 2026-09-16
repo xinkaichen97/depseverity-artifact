@@ -6,8 +6,9 @@ import aggregate as A
 import data_depsign as DS
 import evaluate as E
 
-MODELS = ["deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
-SHORT = {"deepseek:deepseek-flash": "V4.1-Flash", "anthropic:claude-sonnet-5": "sonnet-5"}
+MODELS = ["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
+SHORT = {"ollama:qwen3.5:9b": "qwen3.5:9b", "deepseek:deepseek-flash": "V4.1-Flash",
+         "anthropic:claude-sonnet-5": "sonnet-5"}
 K = len(DS.LABELS)
 
 
