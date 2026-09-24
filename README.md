@@ -1,4 +1,4 @@
-# Artifact — anonymous submission
+# Artifact for "Structure vs. Chain-of-Thought: Evaluating LLM Criteria Extraction for Depression Severity"
 
 Code, exact prompts, aggregate results, and scrubbed per-post records for the paper.
 
