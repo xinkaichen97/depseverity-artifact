@@ -62,6 +62,26 @@ def recover_items(raw: str, inventory) -> dict | None:
     return out
 
 
+def fill_omitted(r: dict, inventory) -> dict | None:
+    """Score a valid response that left out exactly one item, counting that item as not present.
+
+    Qwen3.5-9B's C4 responses sometimes return 20 well-formed items and omit `sleep_change`.
+    The score counts only `present`, and an omitted key makes no claim of presence, so the
+    item is recorded as `unclear` (flagged `omitted`). Anything else, including a response
+    that omits two or more items, is still dropped.
+    """
+    err = r.get("parse_error") or ""
+    if not err.startswith("missing_items: "):
+        return None
+    missing = err.split(": ", 1)[1].split(",")
+    if len(missing) != 1:
+        return None
+    got, why = C.parse_items(r.get("raw") or "", [it for it in inventory if it[0] not in missing])
+    if got is None:
+        return None
+    return {**got, missing[0]: {"status": "unclear", "evidence": "", "omitted": True}}
+
+
 def usable(recs: list[dict], inventory) -> list[dict]:
     """Records with items, recovering the statuses of any that failed to parse."""
     out = []
@@ -69,7 +89,7 @@ def usable(recs: list[dict], inventory) -> list[dict]:
         if r.get("items"):
             out.append(r)
             continue
-        got = recover_items(r.get("raw") or "", inventory)
+        got = recover_items(r.get("raw") or "", inventory) or fill_omitted(r, inventory)
         if got is not None:
             out.append({**r, "items": got, "recovered": True})
     return out

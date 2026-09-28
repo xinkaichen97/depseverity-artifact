@@ -38,6 +38,26 @@ def recover(raw, n):
     return out if len(out) == n else None
 
 
+def fill_omitted(r, n):
+    """Mirrors aggregate.fill_omitted: a valid response missing exactly one item scores it unclear."""
+    err = r.get("parse_error") or ""
+    if not err.startswith("missing_items: ") or "," in err:
+        return None
+    m = re.search(r"\{.*\}", r.get("raw") or "", re.S)
+    try:
+        obj = json.loads(m.group(0)) if m else None
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    out = {k: {"status": v} if isinstance(v, str) else v for k, v in obj.items()}
+    if len(out) != n - 1 or any(v.get("status") not in ("present", "absent", "unclear")
+                                for v in out.values()):
+        return None
+    out[err.split(": ", 1)[1]] = {"status": "unclear"}
+    return out
+
+
 def qwk(g, p, k):
     cm = np.bincount(k * g + p, minlength=k * k).reshape(k, k).astype(float)
     i, j = np.indices((k, k))
@@ -64,7 +84,8 @@ for corpus, labels in LABELS.items():
                     cuts = np.asarray(N[corpus]["cells"][key]["cutoffs"])
                     pairs = []
                     for r in recs:
-                        items = r.get("items") or recover(r.get("raw") or "", N_ITEMS[cond])
+                        items = (r.get("items") or recover(r.get("raw") or "", N_ITEMS[cond])
+                                 or fill_omitted(r, N_ITEMS[cond]))
                         if items is None:
                             continue
                         s = sum(v["status"] == "present" for v in items.values())

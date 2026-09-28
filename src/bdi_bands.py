@@ -10,8 +10,8 @@ import data as D
 import data_depsign as DS
 import evaluate as E
 
-MODELS = ["deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
-SHORT = {"deepseek:deepseek-flash": "DeepSeek-V4.1-Flash",
+MODELS = ["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]
+SHORT = {"ollama:qwen3.5:9b": "Qwen3.5-9B", "deepseek:deepseek-flash": "DeepSeek-V4.1-Flash",
          "anthropic:claude-sonnet-5": "Claude-Sonnet-5"}
 CORPORA = {"depseverity": (D, 4, A.BDI_CUTOFFS_4),
            "depsign": (DS, 3, A.BDI_CUTOFFS_3)}
