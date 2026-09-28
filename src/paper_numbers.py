@@ -65,7 +65,9 @@ for ds, (mod, k) in CORPORA.items():
                     "n_sev": m["n_gold_severe"], "over": m["over_rate"],
                     "under": m["under_rate"], "cutoffs": cc}
         for a, b in (("C1", "C2"), ("C2", "C3 fitted"), ("C2", "C3 a priori"),
-                     ("C2", "C4 fitted"), ("C2", "C4 a priori")):
+                     ("C2", "C4 fitted"), ("C2", "C4 a priori"),
+                     ("C1", "C3 fitted"), ("C1", "C3 a priori"),
+                     ("C1", "C4 fitted"), ("C1", "C4 a priori")):
             if a in store and b in store:
                 dd = delta(store[a], store[b], k)
                 out[ds]["deltas"][f"{n}|{b} - {a}"] = {

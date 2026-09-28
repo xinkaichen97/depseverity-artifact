@@ -2,7 +2,8 @@
 
 Inputs: numbers.json, per_class_recall.json (run per_class_recall.py first), the run records
 in ../runs or ../runs_scrubbed (output lengths), ../results/*.md, and the prompt text in
-../src/conditions.py. Nothing is transcribed by hand except the Holm survivor list, which is the one reported in the paper's Limitations section.
+../src/conditions.py. Nothing is transcribed by hand except the Holm survivor list, which
+is the one reported in the paper's Limitations section.
 """
 import json
 import re
@@ -45,7 +46,8 @@ out += [r"\begin{table}[!htb]", r"\caption{All paired comparisons ($\Delta\kappa
         r"\midrule"]
 for ds in CORP:
     for m in MODELS:
-        for comp in CONFIRM + ("C4 fitted - C2", "C4 a priori - C2"):
+        for comp in CONFIRM + ("C4 fitted - C2", "C4 a priori - C2", "C3 fitted - C1",
+                               "C3 a priori - C1", "C4 fitted - C1", "C4 a priori - C1"):
             v = N[ds]["deltas"].get(f"{m}|{comp}")
             if v is None:
                 continue
