@@ -6,7 +6,7 @@ compared with C2 on the same posts.
 
 | Corpus | Model | cutoffs | C4 QWK | dQWK vs C2 [95% CI] | sig |
 |---|---|---|---:|---|:--:|
-| depseverity | Qwen3.5-9B | — | _missing C4 test run for ollama:qwen3.5:9b_ | | |
+| depseverity | Qwen3.5-9B | [4.5, 6.5, 9.5] | 0.057 | -0.283 [-0.350, -0.216] | **yes** |
 | depseverity | DeepSeek-V4.1-Flash | [4.5, 6.5, 9.5] | 0.079 | -0.425 [-0.504, -0.344] | **yes** |
 | depseverity | Claude-Sonnet-5 | [4.5, 6.5, 9.5] | 0.110 | -0.352 [-0.431, -0.269] | **yes** |
 | depsign | Qwen3.5-9B | [4.5, 9.5] | 0.135 | +0.023 [-0.030, +0.076] | no |

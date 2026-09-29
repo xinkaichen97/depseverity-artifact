@@ -107,6 +107,35 @@ def main():
                 out.append(f"| {ds} | {short} | C3 fitted $-$ {cond}+cal | "
                            f"${dd['delta']:+.3f}$ [{dd['ci'][0]:+.3f}, {dd['ci'][1]:+.3f}] | "
                            f"{'**yes**' if dd['excludes_zero'] else 'no'} |")
+
+    # The same test for the label-free rules and for C4, wherever a C4 run exists.
+    out += ["", "## Other extraction variants against a supervision-matched C1/C2 "
+            "(paired, 4000 resamples)\n",
+            "| Corpus | Model | Comparison | $\\Delta\\kappa_w$ [95\\% CI] | sig |",
+            "|---|---|---|---|:--:|"]
+    for ds, (mod, k) in CORP.items():
+        cuts_ap = A.CLINICAL_CUTOFFS if k == 4 else A.CLINICAL_CUTOFFS_3
+        for model in ["ollama:qwen3.5:9b", "deepseek:deepseek-flash", "anthropic:claude-sonnet-5"]:
+            short = model.split(":")[1][:12]
+            for cond in ("C2", "C1"):
+                fit, test = load(cond, model, "fit", ds), load(cond, model, "test", ds)
+                if not fit or not test:
+                    continue
+                m, _ = fit_map(fit, k)
+                for variant, cc in (("C3 a priori", cuts_ap), ("C4 fitted", None),
+                                    ("C4 a priori", cuts_ap)):
+                    try:
+                        a = A.build(model, condition=variant[:2], dataset=ds, cutoffs=cc)
+                    except SystemExit:
+                        continue
+                    pv = dict(zip(a["ids"], a["y_pred"]))
+                    ids = sorted(set(test) & set(pv))
+                    dd = E.paired_delta(np.array([test[i][0] for i in ids]),
+                                        np.array([m[test[i][1]] for i in ids]),
+                                        np.array([pv[i] for i in ids]), "qwk", k=k)
+                    out.append(f"| {ds} | {short} | {variant} $-$ {cond}+cal | "
+                               f"${dd['delta']:+.3f}$ [{dd['ci'][0]:+.3f}, {dd['ci'][1]:+.3f}] | "
+                               f"{'**yes**' if dd['excludes_zero'] else 'no'} |")
     txt = "\n".join(out)
     open("results/calibration_control.md", "w").write(txt)
     print(txt)

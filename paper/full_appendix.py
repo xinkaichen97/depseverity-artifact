@@ -133,10 +133,10 @@ def prompt_block(title, text):
 
 
 
-def md_rows(path, header_start):
-    """Rows of the markdown table whose header line starts with `header_start`."""
+def md_rows(path, header_start, nth=0):
+    """Rows of the nth markdown table whose header line starts with `header_start`."""
     lines = open(path).read().split("\n")
-    i = next(j for j, l in enumerate(lines) if l.startswith(header_start))
+    i = [j for j, l in enumerate(lines) if l.startswith(header_start)][nth]
     rows = []
     for l in lines[i + 2:]:
         if not l.startswith("|"):
@@ -169,6 +169,22 @@ for ds, m, cond, raw, calq, mp, _c3 in cal:
                f"{md2tex(d.replace('$', ''))} \\\\")
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
+out += [r"\begin{table}[!htb]", r"\caption{Label-free rules and C4 against C1 and C2 given the "
+        r"same labels (monotone relabeling as in Table~\ref{tab:cal}): $\Delta\kappa_w$ with 95\% "
+        r"paired bootstrap interval. Exploratory; bold intervals exclude zero.}",
+        r"\label{tab:cal2}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{2.5pt}",
+        r"\begin{tabular}{lllc}", r"\toprule",
+        r"\textbf{Corpus} & \textbf{Model} & \textbf{Comparison} & $\Delta\kappa_w$ [95\% CI] \\",
+        r"\midrule"]
+for ds, m, comp, d, sig in md_rows(RES / "calibration_control.md", "| Corpus | Model | Comparison", 1):
+    d = md2tex(d.replace("$", ""))
+    comp = md2tex(comp.replace("$-$", "-")).replace(" $-$", " -").replace(" - ", " $-$ ").replace(
+        "a priori", r"\emph{a priori}")
+    out.append(f"{CORP[ds]} & {MN[m]} & {comp} & "
+               + (r"\textbf{" + d.split(" [")[0] + "} [" + d.split(" [")[1] if "yes" in sig else d)
+               + r" \\")
+out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
+
 abl = md_rows(RES / "prompt_ablation.md", "| Variant | present/post")
 ablc = {r[0]: r[1:] for r in md_rows(RES / "prompt_ablation.md", "| Variant | vs C2")}
 out += [r"\begin{table}[!htb]", r"\caption{C3 prompt variants, DeepSeek-V4.1-Flash on DepSeverity "
@@ -183,13 +199,14 @@ for v, pp, ab, _g, qf, qa in abl:
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
 (HERE / "appendix_tables.tex").write_text("\n".join(out) + "\n")
-NAMES = {"tab:allcomp": "comp", "tab:cutoffs": "cutoffs", "tab:cal": "cal", "tab:tokens": "tokens",
+NAMES = {"tab:allcomp": "comp", "tab:cutoffs": "cutoffs", "tab:cal": "cal", "tab:cal2": "cal",
+         "tab:tokens": "tokens",
          "tab:ablation": "ablation", "tab:recall-depseverity": "recall", "tab:recall-depsign": "recall"}
 parts = {}
 for block in "\n".join(out).split(r"\begin{table}")[1:]:
     label = re.search(r"\\label\{([^}]+)\}", block)[1]
     text = r"\begin{table}" + block.rstrip() + "\n"
-    if NAMES[label] in ("comp", "cal", "ablation"):  # too wide for one column
+    if label in ("tab:allcomp", "tab:cal", "tab:cal2", "tab:ablation"):  # too wide for one column
         text = text.replace(r"\begin{table}[!htb]", r"\begin{table*}[!t]").replace(
             r"\end{table}", r"\end{table*}")
     parts.setdefault(NAMES[label], []).append(text)
