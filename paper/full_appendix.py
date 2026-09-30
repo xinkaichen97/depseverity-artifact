@@ -206,9 +206,8 @@ parts = {}
 for block in "\n".join(out).split(r"\begin{table}")[1:]:
     label = re.search(r"\\label\{([^}]+)\}", block)[1]
     text = r"\begin{table}" + block.rstrip() + "\n"
-    if label in ("tab:allcomp", "tab:cal", "tab:cal2", "tab:ablation"):  # too wide for one column
-        text = text.replace(r"\begin{table}[!htb]", r"\begin{table*}[!t]").replace(
-            r"\end{table}", r"\end{table*}")
+    # The appendix is set in one column, so every table can sit where it is called.
+    text = text.replace(r"\begin{table}[!htb]", r"\begin{table}[!htbp]")
     parts.setdefault(NAMES[label], []).append(text)
 for name, blocks in parts.items():
     (HERE / f"appendix_tables_{name}.tex").write_text("\n".join(blocks))
