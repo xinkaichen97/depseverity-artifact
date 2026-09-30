@@ -65,17 +65,18 @@ def llm_preds(model, cond, regime):
     return dict(zip(agg["ids"], agg["y_pred"])), dict(zip(agg["ids"], agg["y_true"]))
 
 
-def paired(ids, y_surface, p_surface):
-    """Paired bootstrap of the metadata-only model against each LLM cell.
+def paired(ids, y_surface, p_surface, label="Dreaddit-feature model",
+           desc="subreddit + stress + length + social + LIWC"):
+    """Paired bootstrap of a Dreaddit-feature model against each LLM cell.
 
     The comparison the eyeball table invites is a paired one: both predictors score
     the same test posts, so marginal CIs are the wrong test.
     """
     sp = dict(zip(ids, p_surface))
     sy = dict(zip(ids, y_surface))
-    out = ["", "## Paired comparison: metadata-only model vs each LLM cell", "",
+    out = ["", f"## Paired comparison: {label} vs each LLM cell", "",
            "Positive $\\Delta$ favors the LLM. Paired bootstrap on the posts both score.", "",
-           "| LLM cell | $\\kappa_w$ | $\\Delta$ vs metadata [95% CI] | $p$ |",
+           f"| LLM cell | $\\kappa_w$ | $\\Delta$ vs {label} [95% CI] | $p$ |",
            "|---|---:|---|---:|"]
     print(f"\n{'LLM cell':<30}{'QWK':>7}   {'delta vs metadata':<26}{'p':>7}")
     for name, model, cond, regime in LLM_CELLS:
@@ -92,9 +93,9 @@ def paired(ids, y_surface, p_surface):
               f"{d['ci'][1]:+.3f}]{star:<3}{d['p_two_sided']:>7.3f}  (n={len(both)})")
         out.append(f"| {name} | {q:.3f} | {d['delta']:+.3f} "
                    f"[{d['ci'][0]:+.3f}, {d['ci'][1]:+.3f}]{star} | {d['p_two_sided']:.3f} |")
-    out += ["", "`*` = 95% CI excludes zero. Metadata-only model: "
+    out += ["", f"`*` = 95% CI excludes zero. {label}: "
             f"$\\kappa_w$ {E._core(np.asarray(y_surface), np.asarray(p_surface))['qwk']:.3f} "
-            "(subreddit + stress + length + social + LIWC)."]
+            f"({desc})."]
     return out
 
 
@@ -103,6 +104,8 @@ def main():
     tr, te = m[m.split == "train"], m[m.split == "test"]
     liwc = [c for c in m.columns if c.startswith(("lex_", "syntax_"))]
     social = ["social_karma", "social_upvote_ratio", "social_num_comments", "sentiment"]
+    # Fields that do not read the post: `sentiment`, length and LIWC are computed from its text.
+    nontext = ["social_karma", "social_upvote_ratio", "social_num_comments"]
 
     def build(cols_num, use_sub, use_stress, use_len):
         parts = []
@@ -130,11 +133,15 @@ def main():
         ("subreddit + stress + length", ([], True, True, True)),
         ("+ social signals (karma, votes, comments)", (social, True, True, True)),
         ("+ LIWC/syntax lexicon counts", (liwc + social, True, True, True)),
+        ("non-text fields only: subreddit + stress + karma/votes/comments",
+         (nontext, True, True, False)),
     ]
     out = ["# Are the labels recoverable from non-criteria features?\n",
-           "Every feature is Dreaddit metadata or a surface property; none involves reading",
-           "the post for depressive symptoms. Fitted on train, evaluated on the frozen test",
-           "split, same ordinal construction and metrics as the LLM conditions.\n",
+           "Every feature comes with Dreaddit or is a surface property; none is a symptom",
+           "annotation. Length, `sentiment` (in the social signals) and the LIWC/syntax counts",
+           "are computed from the post text; the last row uses only fields that do not read",
+           "it. Fitted on train, evaluated on the frozen test split, same ordinal construction",
+           "and metrics as the LLM conditions.\n",
            "| Feature set | $\\kappa_w$ [95% CI] | MAE | Acc |", "|---|---|---:|---:|"]
     print(f"{'feature set':<44}{'QWK':>7}{'   95% CI':<18}{'MAE':>7}{'Acc':>7}")
     for name, (cols, sub, st, ln) in rows:
@@ -149,7 +156,9 @@ def main():
     out += ["", "Reference points on the same test split: best LLM condition "
             "$\\kappa_w = 0.526$ (C3 fitted, DeepSeek-V4.1-Flash); chain-of-thought "
             "0.462--0.504; TF-IDF text baseline 0.374; majority class 0.000."]
-    out += paired(te.index.values, yte, preds[rows[-1][0]])
+    out += paired(te.index.values, yte, preds[rows[-2][0]])
+    out += paired(te.index.values, yte, preds[rows[-1][0]], label="non-text model",
+                  desc="subreddit + stress + karma/votes/comments; nothing computed from the text")
     open("results/surface_features.md", "w").write("\n".join(out))
     print()
     print("reference: best LLM 0.526 | CoT 0.462-0.504 | TF-IDF 0.374 | majority 0.000")
