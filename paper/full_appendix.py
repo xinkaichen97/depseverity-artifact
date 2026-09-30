@@ -88,7 +88,7 @@ for ds in CORP:
         for key, v in R[ds]["cells"].items():
             if not key.startswith(m + "|"):
                 continue
-            tag = key.split("|")[1].replace("a priori", r"\emph{a pr.}")
+            tag = key.split("|")[1].replace("a priori", r"\emph{a priori}")
             out.append(f"{SHORTM[m] if first else ''} & {tag} & "
                        + " & ".join(f"{x:.2f}" for x in v["recall"]) + r" \\")
             first = False
@@ -169,9 +169,10 @@ for ds, m, cond, raw, calq, mp, _c3 in cal:
                f"{md2tex(d.replace('$', ''))} \\\\")
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
-out += [r"\begin{table}[!htb]", r"\caption{Label-free rules and C4 against C1 and C2 given the "
-        r"same labels (monotone relabeling as in Table~\ref{tab:cal}): $\Delta\kappa_w$ with 95\% "
-        r"paired bootstrap interval. Exploratory; bold intervals exclude zero.}",
+out += [r"\begin{table}[!htb]", r"\caption{The \emph{a priori} rules and C4 against C1 and C2. Every C1 and C2 "
+        r"prediction here is recalibrated on the 600-post fitting split with the monotone relabeling "
+        r"of Table~\ref{tab:cal}. $\Delta\kappa_w$ with 95\% paired bootstrap interval; "
+        r"exploratory; bold intervals exclude zero.}",
         r"\label{tab:cal2}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{2.5pt}",
         r"\begin{tabular}{lllc}", r"\toprule",
         r"\textbf{Corpus} & \textbf{Model} & \textbf{Comparison} & $\Delta\kappa_w$ [95\% CI] \\",
@@ -179,7 +180,7 @@ out += [r"\begin{table}[!htb]", r"\caption{Label-free rules and C4 against C1 an
 for ds, m, comp, d, sig in md_rows(RES / "calibration_control.md", "| Corpus | Model | Comparison", 1):
     d = md2tex(d.replace("$", ""))
     comp = md2tex(comp.replace("$-$", "-")).replace(" $-$", " -").replace(" - ", " $-$ ").replace(
-        "a priori", r"\emph{a priori}")
+        "a priori", r"\emph{a priori}").replace("+cal", "")
     out.append(f"{CORP[ds]} & {MN[m]} & {comp} & "
                + (r"\textbf{" + d.split(" [")[0] + "} [" + d.split(" [")[1] if "yes" in sig else d)
                + r" \\")
