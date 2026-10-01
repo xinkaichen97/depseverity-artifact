@@ -1,5 +1,7 @@
 # Artifact for "Structure vs. Chain-of-Thought: Evaluating LLM Criteria Extraction for Depression Severity"
 
+Paper: [arXiv:2609.39049](https://arxiv.org/abs/2609.39049) (extended version; accepted at MHSM 2026, an IEEE ICDM 2026 workshop).
+
 Code, exact prompts, aggregate results, and scrubbed per-post records for the paper.
 
 ## What is here
