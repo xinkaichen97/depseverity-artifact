@@ -18,13 +18,16 @@ out = {}
 def preds(cond, model, ds, cuts="fitted"):
     k = CORPORA[ds][1]
     labels = CORPORA[ds][0].LABELS
-    if cond in ("C3", "C4"):
+    if cond in ("C3", "C4", "C2S counted"):
         cc = None if cuts == "fitted" else (
             A.CLINICAL_CUTOFFS if k == 4 else A.CLINICAL_CUTOFFS_3)
-        a = A.build(model, condition=cond, dataset=ds, cutoffs=cc)
+        # "C2S counted" applies C3's counting rule to the checklist lines of C2S.
+        a = A.build(model, condition=cond.split()[0], dataset=ds, cutoffs=cc)
         return {i: (t, p) for i, t, p in zip(a["ids"], a["y_true"], a["y_pred"])}, a["cutoffs"]
     recs = A.load_run(cond, model, "test", dataset=ds)
     ok = [r for r in recs if r.get("pred")]
+    if not ok:   # skipped like a missing C3/C4 run, not scored as an empty cell
+        raise SystemExit(f"missing {cond} test run for {model}")
     return {r["id"]: (labels.index(r["gold"]), labels.index(r["pred"])) for r in ok}, None
 
 
@@ -50,13 +53,14 @@ for ds, (mod, k) in CORPORA.items():
     for model in MODELS:
         n = SHORT[model]
         store = {}
-        for cond in ("C1", "C2", "C3", "C4"):
-            for cuts in (("fitted", "a priori") if cond in ("C3", "C4") else ("fitted",)):
+        for cond in ("C1", "C2", "C3", "C4", "C2S", "C2S counted"):
+            for cuts in (("fitted", "a priori") if cond in ("C3", "C4", "C2S counted")
+                         else ("fitted",)):
                 try:
                     d, cc = preds(cond, model, ds, cuts)
                 except SystemExit:
                     continue
-                tag = cond if cond in ("C1", "C2") else f"{cond} {cuts}"
+                tag = cond if cond in ("C1", "C2", "C2S") else f"{cond} {cuts}"
                 store[tag] = d
                 m = ev(d, k)
                 out[ds]["cells"][f"{n}|{tag}"] = {
@@ -67,12 +71,17 @@ for ds, (mod, k) in CORPORA.items():
         for a, b in (("C1", "C2"), ("C2", "C3 fitted"), ("C2", "C3 a priori"),
                      ("C2", "C4 fitted"), ("C2", "C4 a priori"),
                      ("C1", "C3 fitted"), ("C1", "C3 a priori"),
-                     ("C1", "C4 fitted"), ("C1", "C4 a priori")):
+                     ("C1", "C4 fitted"), ("C1", "C4 a priori"),
+                     # C2S ablation: criteria-structured chain-of-thought
+                     ("C2", "C2S"), ("C1", "C2S"),
+                     ("C2S", "C2S counted fitted"), ("C2S", "C2S counted a priori"),
+                     ("C3 fitted", "C2S counted fitted"), ("C3 a priori", "C2S counted a priori"),
+                     ("C2", "C2S counted fitted"), ("C2", "C2S counted a priori")):
             if a in store and b in store:
                 dd = delta(store[a], store[b], k)
                 out[ds]["deltas"][f"{n}|{b} - {a}"] = {
                     "d": dd["delta"], "ci": dd["ci"], "sig": dd["excludes_zero"]}
-        for cond, inv in (("C3", C.ITEMS), ("C4", C.BDI_ITEMS)):
+        for cond, inv in (("C3", C.ITEMS), ("C4", C.BDI_ITEMS), ("C2S", C.ITEMS)):
             recs = [r for r in A.load_run(cond, model, "test", dataset=ds) if r.get("items")]
             if not recs:
                 continue

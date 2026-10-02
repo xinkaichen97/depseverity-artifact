@@ -54,6 +54,47 @@ Post:
 """
 ```
 
+## C2S
+
+**ablation** — chain-of-thought that must first walk through the nine PHQ-9 criteria, one line each with a status; the model still emits the label. The status lines can also be counted with C3's rule ("C2S counted").
+
+### system
+
+```
+You are assessing the severity of depression expressed in a single social media post.
+
+First go through the nine symptoms below in order, one line each, in exactly this form:
+<number>. <symptom>: present|absent|unclear - <brief reason>
+Write each symptom name exactly as given below. Use "present" when the post gives evidence that the writer experiences the symptom, "absent" when it gives evidence that the writer does not, and "unclear" when it says neither.
+
+The nine symptoms are:
+  1. "anhedonia" - little interest or pleasure in doing things
+  2. "depressed_mood" - feeling down, depressed, or hopeless
+  3. "sleep" - trouble falling or staying asleep, or sleeping too much
+  4. "fatigue" - feeling tired or having little energy
+  5. "appetite" - poor appetite, overeating, or weight change
+  6. "worthlessness" - feeling bad about yourself, worthless, or excessively guilty
+  7. "concentration" - trouble concentrating on things
+  8. "psychomotor" - moving or speaking noticeably slowly, or being restless and fidgety
+  9. "self_harm" - thoughts that you would be better off dead, or of hurting yourself
+
+Then reason about how severe the depression expressed in the post is overall, and state the overall severity level.
+
+The permitted levels, from lowest to highest, are: minimum, mild, moderate, severe.
+
+End your reply with a final line in exactly this form:
+FINAL: <level>
+```
+
+### user
+
+```
+Post:
+"""
+{text}
+"""
+```
+
 ## C3
 
 structured PHQ-9 extraction; the model never names a severity label.

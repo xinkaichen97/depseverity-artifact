@@ -47,7 +47,10 @@ out += [r"\begin{table}[!htb]", r"\caption{All paired comparisons ($\Delta\kappa
 for ds in CORP:
     for m in MODELS:
         for comp in CONFIRM + ("C4 fitted - C2", "C4 a priori - C2", "C3 fitted - C1",
-                               "C3 a priori - C1", "C4 fitted - C1", "C4 a priori - C1"):
+                               "C3 a priori - C1", "C4 fitted - C1", "C4 a priori - C1",
+                               "C2S - C2", "C2S counted fitted - C2S",
+                               "C2S counted a priori - C2S", "C2S counted fitted - C3 fitted",
+                               "C2S counted a priori - C3 a priori"):
             v = N[ds]["deltas"].get(f"{m}|{comp}")
             if v is None:
                 continue
@@ -97,13 +100,14 @@ for ds in CORP:
 # Table D: mean input and output tokens per call.
 out += [r"\begin{table}[!htb]", r"\caption{Mean tokens per test call, input / output, as "
         r"reported by each provider.}", r"\label{tab:tokens}", r"\centering\footnotesize",
-        r"\setlength{\tabcolsep}{3pt}", r"\begin{tabular}{llcccc}", r"\toprule",
-        r"\textbf{Corpus} & \textbf{Model} & \textbf{C1} & \textbf{C2} & \textbf{C3} & \textbf{C4} \\",
+        r"\setlength{\tabcolsep}{3pt}", r"\begin{tabular}{llccccc}", r"\toprule",
+        r"\textbf{Corpus} & \textbf{Model} & \textbf{C1} & \textbf{C2} & \textbf{C2S} & "
+        r"\textbf{C3} & \textbf{C4} \\",
         r"\midrule"]
 for ds in CORP:
     for m in MODELS:
         cells = []
-        for c in ("C1", "C2", "C3", "C4"):
+        for c in ("C1", "C2", "C2S", "C3", "C4"):
             p = RUNS / f"{'' if ds == 'depseverity' else 'depsign_'}{c}_{RUNID[m]}_test_seed0.jsonl"
             if not p.exists():
                 cells.append("--")
@@ -215,6 +219,7 @@ for name, blocks in parts.items():
 
 P = []
 for cond, title in (("C1", "C1 (direct)"), ("C2", "C2 (chain-of-thought)"),
+                    ("C2S", "C2S (criteria-structured chain-of-thought)"),
                     ("C3", "C3 (PHQ-9 extraction)"), ("C4", "C4 (BDI-II extraction)"),
                     ("C3P", "C3P (permissive variant)"), ("C3S", "C3S (symmetric variant)")):
     system, user = C.SPECS[cond]

@@ -161,22 +161,43 @@ C3S_SYSTEM = (
     "Include all nine symptom keys exactly as written above."
 )
 
+# -------------------------------------------------------------------------- C2S
+# Ablation: chain-of-thought that must walk through the nine PHQ-9 criteria, one per line,
+# before the model gives the label itself. Same free-text format and label source as C2,
+# same criteria and status vocabulary as C3, so the checklist lines can also be counted.
+
+C2S_SYSTEM = (
+    "You are assessing the severity of depression expressed in a single social media post.\n\n"
+    "First go through the nine symptoms below in order, one line each, in exactly this form:\n"
+    "<number>. <symptom>: present|absent|unclear - <brief reason>\n"
+    "Write each symptom name exactly as given below. Use \"present\" when the post gives "
+    "evidence that the writer experiences the symptom, \"absent\" when it gives evidence that "
+    "the writer does not, and \"unclear\" when it says neither.\n\n"
+    "The nine symptoms are:\n" + _ITEM_LINES + "\n\n"
+    "Then reason about how severe the depression expressed in the post is overall, and state "
+    "the overall severity level.\n\n"
+    "The permitted levels, from lowest to highest, are: minimum, mild, moderate, severe.\n\n"
+    "End your reply with a final line in exactly this form:\n"
+    "FINAL: <level>"
+)
+
 SPECS = {
     "C1": (C1_SYSTEM, C1_USER),
     "C2": (C2_SYSTEM, C2_USER),
+    "C2S": (C2S_SYSTEM, C2_USER),
     "C3": (C3_SYSTEM, C3_USER),
     "C4": (C4_SYSTEM, C4_USER),
     "C3P": (C3P_SYSTEM, C3_USER),
     "C3S": (C3S_SYSTEM, C3_USER),
 }
 
-ITEMS_FOR = {"C3": ITEMS, "C4": BDI_ITEMS, "C3P": ITEMS, "C3S": ITEMS}
+ITEMS_FOR = {"C3": ITEMS, "C4": BDI_ITEMS, "C3P": ITEMS, "C3S": ITEMS, "C2S": ITEMS}
 
 
 def prompt(condition: str, text: str, labels=None) -> tuple[str, str]:
     """C3/C4 never name the severity labels, so they are unaffected by `labels`."""
     sys_p, user_p = SPECS[condition]
-    if labels is not None and condition in ("C1", "C2"):
+    if labels is not None and condition in ("C1", "C2", "C2S"):
         sys_p = sys_p.replace(
             "minimum, mild, moderate, severe", ", ".join(labels))
     return sys_p, user_p.format(text=text)
@@ -255,3 +276,23 @@ def span_grounded(evidence: str, post: str) -> bool | None:
     if not evidence.strip():
         return None
     return _norm(evidence) in _norm(post)
+
+
+def parse_checklist(text: str, items=None) -> tuple[dict | None, str | None]:
+    """C2S: read the per-symptom status lines into the same shape as parse_items.
+
+    Takes the first line naming each symptom; returns None unless all nine are found.
+    """
+    items = ITEMS if items is None else items
+    out, missing = {}, []
+    for key, _ in items:
+        name = re.escape(key).replace("_", "[ _]")
+        m = re.search(rf"^\W*\d*\W*{name}\W*[:\-\u2013\u2014]\W*(present|absent|unclear)\b",
+                      text, re.I | re.M)
+        if m:
+            out[key] = {"status": m.group(1).lower(), "evidence": ""}
+        else:
+            missing.append(key)
+    if missing:
+        return None, f"missing_items: {','.join(missing)}"
+    return out, None

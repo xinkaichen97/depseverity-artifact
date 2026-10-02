@@ -32,7 +32,7 @@ def subset(df, which: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--condition", required=True, choices=["C1", "C2", "C3", "C4", "C3P", "C3S"])
+    ap.add_argument("--condition", required=True, choices=["C1", "C2", "C2S", "C3", "C4", "C3P", "C3S"])
     ap.add_argument("--model", required=True, help="anthropic:claude-sonnet-5 | ollama:qwen3:8b")
     ap.add_argument("--subset", default="dev", choices=["dev", "fit", "train", "test"])
     ap.add_argument("--seed", type=int, default=0)
@@ -80,9 +80,11 @@ def main():
                     for k, v in items.items() if v["evidence"].strip()
                 }
         else:
-            lab = C.parse_label(r.text, last=(args.condition == "C2"), labels=labels)
+            lab = C.parse_label(r.text, last=(args.condition in ("C2", "C2S")), labels=labels)
             rec["pred"] = lab
             rec["parse_error"] = None if lab else "no_label_found"
+            if args.condition == "C2S":   # the checklist can also be counted, as in C3
+                rec["items"], rec["items_error"] = C.parse_checklist(r.text)
         return rec
 
     items = list(df.iterrows())

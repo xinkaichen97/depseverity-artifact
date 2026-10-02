@@ -19,7 +19,7 @@ LABELS = {"depseverity": ["minimum", "mild", "moderate", "severe"],
           "depsign": ["not depression", "moderate", "severe"]}
 TAG = {"Qwen3.5-9B": "ollama-qwen3.5-9b", "DeepSeek-V4.1-Flash": "deepseek-deepseek-flash",
        "Claude-Sonnet-5": "anthropic-claude-sonnet-5"}
-N_ITEMS = {"C3": 9, "C4": 21}
+N_ITEMS = {"C3": 9, "C4": 21, "C2S counted": 9}
 
 
 def load(corpus, cond, model):
@@ -72,8 +72,9 @@ for corpus, labels in LABELS.items():
     k = len(labels)
     out[corpus] = {"labels": labels, "cells": {}}
     for model in TAG:
-        for cond in ("C1", "C2", "C3", "C4"):
-            recs = load(corpus, cond, model)
+        for cond in ("C1", "C2", "C3", "C4", "C2S", "C2S counted"):
+            # "C2S counted" re-reads the C2S records and counts their checklist lines.
+            recs = load(corpus, cond.split()[0], model)
             if recs is None:
                 continue
             for reg in (("fitted", "a priori") if cond in N_ITEMS else (None,)):
