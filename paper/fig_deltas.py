@@ -27,6 +27,9 @@ plt.rcParams.update({
     "font.family": "serif", "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
     "font.size": 7, "axes.linewidth": 0.6,
     "text.usetex": False, "mathtext.fontset": "stix",
+    # TrueType (Type 42) rather than matplotlib's default Type 3 fonts: IEEE PDF eXpress
+    # rejects Type 3.
+    "pdf.fonttype": 42, "ps.fonttype": 42,
 })
 
 fig, ax = plt.subplots(figsize=(3.4, 2.2))
