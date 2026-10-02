@@ -20,7 +20,8 @@ Code, exact prompts, aggregate results, and scrubbed per-post records for the pa
   `run_to_run.py` (generation variance from the seed-1 repeats of Claude-Sonnet-5 and
   DeepSeek-V4.1-Flash). For the extended version's appendix: `per_class_recall.py`
   (per-class recall for every cell, checked against `numbers.json` first) and
-  `full_appendix.py` (writes the appendix tables and prompts as LaTeX).
+  `full_appendix.py` (writes the appendix tables and prompts as LaTeX), `fig_tradeoff.py`
+  (agreement vs. missed SEVERE posts) and `fig_counts.py` (criteria marked per post).
 
 ## What is deliberately absent
 
@@ -46,6 +47,7 @@ python src/calibrate.py                 # supervision-matched C1/C2 control
 python src/paper_numbers.py             # paper/numbers.json
 cd paper && python fig_deltas.py && python macro_f1_boot.py   # Fig. 1, macro-F1 tests
 cd paper && python per_class_recall.py && python full_appendix.py   # extended-version appendix
+cd paper && python fig_tradeoff.py && python fig_counts.py   # extended-version figures
 ```
 
 Every metric in the paper can be recomputed from `runs_scrubbed/` alone, without any
@@ -57,4 +59,4 @@ model calls, using the functions in `src/aggregate.py` and `src/evaluate.py`.
   was not, and every run in `runs_scrubbed/` reports 0.
 - `meta.called_utc` records when each call was made. This matters: one hosted model ID
   was re-pointed to a different model during the study period.
-- Scrubbing removed 32467 verbatim evidence spans across 46628 records.
+- Scrubbing removed 32467 verbatim evidence spans across 49240 records.
