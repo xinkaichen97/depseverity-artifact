@@ -45,6 +45,7 @@ python src/stricter_thresholds.py       # C3 with stricter count thresholds (Sec
 python src/ceiling.py                   # learned-aggregation ceiling
 python src/error_analysis.py            # item 9, span grounding, per-community
 python src/calibrate.py                 # supervision-matched C1/C2 control
+python src/capped_count.py              # same control with C3 capped to C2's resolution (Sec. V-C)
 python src/paper_numbers.py             # paper/numbers.json
 cd paper && python fig_deltas.py && python macro_f1_boot.py   # Fig. 1, macro-F1 tests
 cd paper && python per_class_recall.py && python full_appendix.py   # extended-version appendix
