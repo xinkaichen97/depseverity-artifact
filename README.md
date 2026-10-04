@@ -41,6 +41,7 @@ python src/results.py                   # main tables
 python src/depsign_results.py           # second-corpus tables
 python src/control_cutoffs.py           # fitted vs a priori control
 python src/bdi_bands.py                 # C4 under BDI-II's own bands
+python src/stricter_thresholds.py       # C3 with stricter count thresholds (Sec. IV-B)
 python src/ceiling.py                   # learned-aggregation ceiling
 python src/error_analysis.py            # item 9, span grounding, per-community
 python src/calibrate.py                 # supervision-matched C1/C2 control
