@@ -38,7 +38,7 @@ def f(x):
 
 # Table A: every paired comparison with C2 or C1.
 out += [r"\begin{table}[!htb]", r"\caption{All paired comparisons ($\Delta\kappa_w$, 95\% paired "
-        r"bootstrap interval, 4000 resamples). Rows marked C are the confirmatory family; "
+        r"bootstrap interval, 4000 resamples). Rows marked C are the main tests, corrected together; "
         r"H = survives Holm correction at $\alpha=0.05$. C4 uses the DSM-5 rule for \emph{a priori}.}",
         r"\label{tab:allcomp}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{3pt}",
         r"\begin{tabular}{llllc}", r"\toprule",
