@@ -36,29 +36,35 @@ def f(x):
     return f"{x:+.3f}".replace("-", "$-$")
 
 
-# Table A: every paired comparison with C2 or C1.
-out += [r"\begin{table}[!htb]", r"\caption{All paired comparisons ($\Delta\kappa_w$, 95\% paired "
-        r"bootstrap interval, 4000 resamples). Rows marked C are the main tests, corrected together; "
-        r"H = survives Holm correction at $\alpha=0.05$. C4 uses the DSM-5 rule for \emph{a priori}.}",
-        r"\label{tab:allcomp}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{3pt}",
-        r"\begin{tabular}{llllc}", r"\toprule",
-        r"\textbf{Corpus} & \textbf{Model} & \textbf{Comparison} & $\Delta\kappa_w$ [95\% CI] & \\",
-        r"\midrule"]
+# Table A: every paired comparison with C2 or C1, one table per corpus (a single table is
+# taller than a page).
+COMPS = CONFIRM + ("C4 fitted - C2", "C4 a priori - C2", "C3 fitted - C1",
+                   "C3 a priori - C1", "C4 fitted - C1", "C4 a priori - C1",
+                   "C2S - C2", "C2S counted fitted - C2S",
+                   "C2S counted a priori - C2S", "C2S counted fitted - C3 fitted",
+                   "C2S counted a priori - C3 a priori")
 for ds in CORP:
+    first = ds == "depseverity"
+    cap = (rf"All paired comparisons on {CORP[ds]} ($\Delta\kappa_w$, 95\% paired bootstrap "
+           r"interval, 4000 resamples). Rows marked C are the main tests, corrected together; "
+           r"H = survives Holm correction at $\alpha=0.05$. C4 uses the DSM-5 rule for \emph{a priori}."
+           if first else rf"All paired comparisons on {CORP[ds]}, as in Table~\ref{{tab:allcomp}}.")
+    out += [r"\begin{table}[!htb]", r"\caption{" + cap + "}",
+            r"\label{tab:allcomp}" if first else rf"\label{{tab:allcomp-{ds}}}",
+            r"\centering\footnotesize", r"\setlength{\tabcolsep}{3pt}",
+            r"\begin{tabular}{lllc}", r"\toprule",
+            r"\textbf{Model} & \textbf{Comparison} & $\Delta\kappa_w$ [95\% CI] & \\",
+            r"\midrule"]
     for m in MODELS:
-        for comp in CONFIRM + ("C4 fitted - C2", "C4 a priori - C2", "C3 fitted - C1",
-                               "C3 a priori - C1", "C4 fitted - C1", "C4 a priori - C1",
-                               "C2S - C2", "C2S counted fitted - C2S",
-                               "C2S counted a priori - C2S", "C2S counted fitted - C3 fitted",
-                               "C2S counted a priori - C3 a priori"):
+        for comp in COMPS:
             v = N[ds]["deltas"].get(f"{m}|{comp}")
             if v is None:
                 continue
             mark = ("C" + (",H" if (ds, m, comp) in HOLM else "")) if comp in CONFIRM else ""
             d = f(v["d"]) if not v["sig"] else r"\textbf{" + f(v["d"]) + "}"
-            out.append(f"{CORP[ds]} & {SHORTM[m]} & {comp.replace(' - ', ' $-$ ').replace('a priori', r'\emph{a priori}')} & "
+            out.append(f"{SHORTM[m]} & {comp.replace(' - ', ' $-$ ').replace('a priori', r'\emph{a priori}')} & "
                        f"{d} [{f(v['ci'][0])}, {f(v['ci'][1])}] & {mark} \\\\")
-out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
+    out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
 # Table B: thresholds actually used.
 out += [r"\begin{table}[!htb]", r"\caption{Thresholds on the count of \texttt{present} criteria "
@@ -204,7 +210,7 @@ for v, pp, ab, _g, qf, qa in abl:
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
 (HERE / "appendix_tables.tex").write_text("\n".join(out) + "\n")
-NAMES = {"tab:allcomp": "comp", "tab:cutoffs": "cutoffs", "tab:cal": "cal", "tab:cal2": "cal",
+NAMES = {"tab:allcomp": "comp", "tab:allcomp-depsign": "comp", "tab:cutoffs": "cutoffs", "tab:cal": "cal", "tab:cal2": "cal",
          "tab:tokens": "tokens",
          "tab:ablation": "ablation", "tab:recall-depseverity": "recall", "tab:recall-depsign": "recall"}
 parts = {}
