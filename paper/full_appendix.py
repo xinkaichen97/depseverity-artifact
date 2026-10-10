@@ -18,7 +18,8 @@ import conditions as C  # noqa: E402
 N = json.load(open(HERE / "numbers.json"))
 R = json.load(open(HERE / "per_class_recall.json"))
 MODELS = ["Qwen3.5-9B", "DeepSeek-V4.1-Flash", "Claude-Sonnet-5"]
-SHORTM = {"Qwen3.5-9B": "Qwen3.5-9B", "DeepSeek-V4.1-Flash": "DeepSeek", "Claude-Sonnet-5": "Claude"}
+# Tables name every model in full (the appendix is one column wide, so there is room).
+SHORTM = {m: m for m in MODELS}
 RUNID = {"Qwen3.5-9B": "ollama-qwen3.5-9b", "DeepSeek-V4.1-Flash": "deepseek-deepseek-flash",
          "Claude-Sonnet-5": "anthropic-claude-sonnet-5"}
 CORP = {"depseverity": "DepSeverity", "depsign": "DepSign"}
@@ -51,7 +52,7 @@ for ds in CORP:
            if first else rf"All paired comparisons on {CORP[ds]}, as in Table~\ref{{tab:allcomp}}.")
     out += [r"\begin{table}[!htb]", r"\caption{" + cap + "}",
             r"\label{tab:allcomp}" if first else rf"\label{{tab:allcomp-{ds}}}",
-            r"\centering\footnotesize", r"\setlength{\tabcolsep}{3pt}",
+            r"\centering\footnotesize", r"\setlength{\tabcolsep}{6pt}",
             r"\begin{tabular}{lllc}", r"\toprule",
             r"\textbf{Model} & \textbf{Comparison} & $\Delta\kappa_w$ [95\% CI] & \\",
             r"\midrule"]
@@ -88,19 +89,20 @@ for ds in CORP:
     labs = R[ds]["labels"]
     head = " & ".join(r"\textsc{" + {"not depression": "not dep."}.get(l, l) + "}" for l in labs)
     out += [r"\begin{table}[!htb]", rf"\caption{{Per-class recall on {CORP[ds]} test "
-            rf"($n$ per class: {', '.join(str(x) for x in next(iter(R[ds]['cells'].values()))['n'])}).}}",
+            rf"($n$ per class: {', '.join(str(x) for x in next(iter(R[ds]['cells'].values()))['n'])}). "
+            r"Bold: highest recall per class within each model.}",
             rf"\label{{tab:recall-{ds}}}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{3pt}",
             r"\begin{tabular}{ll" + "c" * len(labs) + "}", r"\toprule",
             rf"\textbf{{Model}} & \textbf{{Cond.}} & {head} \\", r"\midrule"]
     for m in MODELS:
-        first = True
-        for key, v in R[ds]["cells"].items():
-            if not key.startswith(m + "|"):
-                continue
+        rows = [(k, v) for k, v in R[ds]["cells"].items() if k.startswith(m + "|")]
+        # Highest recall per class within this model, compared as printed (ties all bold).
+        best = [max(round(v["recall"][j], 2) for _, v in rows) for j in range(len(labs))]
+        for i, (key, v) in enumerate(rows):
             tag = key.split("|")[1].replace("a priori", r"\emph{a priori}")
-            out.append(f"{SHORTM[m] if first else ''} & {tag} & "
-                       + " & ".join(f"{x:.2f}" for x in v["recall"]) + r" \\")
-            first = False
+            cells = [r"\textbf{" + f"{x:.2f}" + "}" if round(x, 2) == best[j] else f"{x:.2f}"
+                     for j, x in enumerate(v["recall"])]
+            out.append(f"{SHORTM[m] if i == 0 else ''} & {tag} & " + " & ".join(cells) + r" \\")
     out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
 # Table D: mean input and output tokens per call.
@@ -162,21 +164,38 @@ def md2tex(c):
 
 
 RES = HERE.parent / "results"
-MN = {"qwen3.5": "Qwen3.5-9B", "deepseek-fla": "DeepSeek", "claude-sonne": "Claude"}
+MN = {"qwen3.5": "Qwen3.5-9B", "deepseek-fla": "DeepSeek-V4.1-Flash", "claude-sonne": "Claude-Sonnet-5"}
 cal = md_rows(RES / "calibration_control.md", "| Corpus | Model | Cond. | raw")
-cmp_ = {(r[0], r[1], r[2].split()[-1]): r[3] for r in
+cmp_ = {(r[0], r[1], r[2].split()[-1]): (r[3], "yes" in r[4]) for r in
         md_rows(RES / "calibration_control.md", "| Corpus | Model | Comparison")}
-out += [r"\begin{table}[!htb]", r"\caption{C1 and C2 given the same labels as C3: a monotone "
-        r"relabeling fitted on the 600-post fitting split. The map lists, for each predicted label "
-        r"from lowest to highest, the label it becomes (\texttt{0123} leaves labels unchanged). "
-        r"The last column is C3 fitted minus the recalibrated condition.}",
+# Short label names for the relabeling column, lowest label first.
+SHORTLAB = {"depseverity": ["min.", "mild", "mod.", "sev."], "depsign": ["not dep.", "mod.", "sev."]}
+
+
+def relabeling(ds, code):
+    """A monotone map as the label changes it makes, e.g. 0012 -> mild to min., mod. to mild, ..."""
+    lab = SHORTLAB[ds]
+    ch = [rf"\textsc{{{lab[i]}}}$\to$\textsc{{{lab[int(c)]}}}" for i, c in enumerate(code)
+          if int(c) != i]
+    return ", ".join(ch) if ch else "unchanged"
+
+
+def bold_delta(d, sig):
+    """Bold the point estimate when its interval excludes zero (as in Tables III, IV, VII)."""
+    return r"\textbf{" + d.split(" [")[0] + "} [" + d.split(" [")[1] if sig else d
+out += [r"\begin{table}[!htb]", r"\caption{C1 and C2 given the same supervision as C3: a monotone "
+        r"relabeling of each condition's predicted label, fitted on the 600-post fitting split and "
+        r"frozen. The relabeling column lists the predicted labels it changes. The last column is C3 "
+        r"fitted minus the recalibrated condition, $\Delta\kappa_w$ with 95\% paired bootstrap "
+        r"interval; exploratory; bold intervals exclude zero.}",
         r"\label{tab:cal}", r"\centering\footnotesize", r"\setlength{\tabcolsep}{2.5pt}",
         r"\begin{tabular}{lllcccl}", r"\toprule",
-        r"\textbf{Corpus} & \textbf{Model} & & raw & +cal & map & C3 fitted $-$ +cal \\", r"\midrule"]
+        r"\textbf{Corpus} & \textbf{Model} & & raw & +cal & relabeling & C3 fitted $-$ +cal \\", r"\midrule"]
 for ds, m, cond, raw, calq, mp, _c3 in cal:
-    d = cmp_[(ds, m, cond + "+cal")]
-    out.append(f"{CORP[ds]} & {MN[m]} & {cond} & {raw} & {md2tex(calq)} & \\texttt{{{mp.strip('`')}}} & "
-               f"{md2tex(d.replace('$', ''))} \\\\")
+    d, sig = cmp_[(ds, m, cond + "+cal")]
+    ds_key = {"DepSeverity": "depseverity", "DepSign": "depsign"}.get(ds, ds)
+    out.append(f"{CORP[ds]} & {MN[m]} & {cond} & {raw} & {md2tex(calq)} & "
+               f"{relabeling(ds_key, mp.strip('`'))} & {bold_delta(md2tex(d.replace('$', '')), sig)} \\\\")
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 
 out += [r"\begin{table}[!htb]", r"\caption{The \emph{a priori} rules and C4 against C1 and C2. Every C1 and C2 "
@@ -200,12 +219,14 @@ abl = md_rows(RES / "prompt_ablation.md", "| Variant | present/post")
 ablc = {r[0]: r[1:] for r in md_rows(RES / "prompt_ablation.md", "| Variant | vs C2")}
 out += [r"\begin{table}[!htb]", r"\caption{C3 prompt variants, DeepSeek-V4.1-Flash on DepSeverity "
         r"(same nine criteria and JSON schema; wording only). Last two columns: $\Delta\kappa_w$ "
-        r"against C2.}", r"\label{tab:ablation}", r"\centering\footnotesize",
+        r"against C2, with 95\% paired bootstrap interval; bold intervals exclude zero.}",
+        r"\label{tab:ablation}", r"\centering\footnotesize",
         r"\setlength{\tabcolsep}{2pt}", r"\begin{tabular}{lcccccc}", r"\toprule",
         r"\textbf{Variant} & pres./post & \texttt{absent} & fitted & \emph{a pr.} & "
         r"vs C2, fitted & vs C2, \emph{a pr.} \\", r"\midrule"]
 for v, pp, ab, _g, qf, qa in abl:
-    cf, ca = (md2tex(x.replace("$", "")).replace(" ns", "").replace(" sig", "") for x in ablc[v])
+    cf, ca = (bold_delta(md2tex(x.replace("$", "")).replace(" ns", "").replace(" sig", ""),
+                         x.replace("*", "").strip().endswith("sig")) for x in ablc[v])
     out.append(f"{v} & {pp} & {ab.replace('%', chr(92) + '%')} & {qf} & {qa} & {cf} & {ca} \\\\")
 out += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
 

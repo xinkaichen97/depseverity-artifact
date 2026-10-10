@@ -14,12 +14,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 RUNS = "../runs" if os.path.isdir("../runs") else "../runs_scrubbed"
-MODELS = [("Qwen3.5-9B", "ollama-qwen3.5-9b", "#2a78d6"),
-          ("DeepSeek-V4.1-Flash", "deepseek-deepseek-flash", "#eb6834"),
-          ("Claude-Sonnet-5", "anthropic-claude-sonnet-5", "#1baf7a")]   # validated slots 1-3
-CORPORA = [("depseverity", "DepSeverity", [0.5, 2.5, 4.5], ["MIN.", "MILD", "MOD.", "SEV."]),
-           ("depsign", "DepSign", [0.5, 4.5], ["NOT DEP.", "MODERATE", "SEVERE"])]
-MAXC = 8
+MODELS = [("Qwen3.5-9B", "ollama-qwen3.5-9b", "#1baf7a"),
+          ("DeepSeek-V4.1-Flash", "deepseek-deepseek-flash", "#2a78d6"),
+          ("Claude-Sonnet-5", "anthropic-claude-sonnet-5", "#eb6834")]   # validated slots 1-3
+# Both panels share one count axis, 0 to 7+ (the last bin pools every higher count), so the
+# stacked panels line up count for count.
+CORPORA = [("depseverity", "DepSeverity", [0.5, 2.5, 4.5], ["MINIMUM", "MILD", "MODERATE", "SEVERE"], 7),
+           ("depsign", "DepSign", [0.5, 4.5], ["NOT DEP.", "MODERATE", "SEVERE"], 7)]
 
 
 def statuses(r):
@@ -40,9 +41,10 @@ plt.rcParams.update({
     "pdf.fonttype": 42, "ps.fonttype": 42,   # IEEE PDF eXpress rejects Type 3 fonts
 })
 
-fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.1), sharey=True)
+# One column: DepSeverity above DepSign.
+fig, axes = plt.subplots(2, 1, figsize=(3.4, 3.5), sharex=True, sharey=True)
 w = 0.27
-for ax, (ds, title, cuts, bands) in zip(axes, CORPORA):
+for ax, (ds, title, cuts, bands, MAXC) in zip(axes, CORPORA):
     pre = "" if ds == "depseverity" else "depsign_"
     for j, (name, tag, col) in enumerate(MODELS):
         recs = [json.loads(line) for line in open(f"{RUNS}/{pre}C3_{tag}_test_seed0.jsonl")]
@@ -58,13 +60,18 @@ for ax, (ds, title, cuts, bands) in zip(axes, CORPORA):
         ax.text((lo + hi) / 2, 1.0, b, transform=ax.get_xaxis_transform(), ha="center",
                 va="bottom", fontsize=6, color="#52514e")
     ax.set_xticks(range(MAXC + 1), [str(i) for i in range(MAXC)] + [f"{MAXC}+"])
-    ax.set_xlabel("criteria marked present (C3)")
     ax.set_title(title, fontsize=7.5, style="italic", pad=10)
     ax.set_ylim(0, 1)
     ax.grid(axis="y", color="#e6e6e6", lw=0.5, zorder=0)
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
-axes[0].set_ylabel("share of test posts")
-axes[1].legend(frameon=False, loc="upper right", handlelength=1.0)
-fig.tight_layout()
+for ax in axes:
+    ax.set_ylabel("share of test posts")
+axes[-1].set_xlabel("criteria marked present (C3)")
+# DepSeverity's SEVERE band (counts 5-7+) is empty; centre the legend there so no threshold
+# line runs through it.
+lo, hi = axes[0].get_xlim()
+axes[0].legend(frameon=False, loc="upper center", handlelength=1.0, fontsize=5.8,
+               bbox_to_anchor=(((4.5 + 7.5) / 2 - lo) / (hi - lo), 0.9))
+fig.tight_layout(h_pad=0.6)
 fig.savefig("fig_counts.pdf", bbox_inches="tight", pad_inches=0.01)
